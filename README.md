@@ -6,3 +6,6 @@ Agents can manipulate the player rods by exerting forces and torques. I wasn't a
 
 Agents receive rewards for scoring goals and penalties for conceding them. In all my training attempts thus far, agents eventually ended up spinning the player rods continuously. An optional per-step spin penalty can be added to counteract this. Furthermore, shots can be rewarded proportional to the vector dot product of the ball's velocity and the direction towards the goal (relative to the ball's position). If enabled, this reward is set for each step while an agent controls the ball. Ball possession starts when an agent player first kicks the ball and ends either when an opponent player touches it, when a goal is scored, or when the ball's velocity drops under the threshold as described above. The minimap UI visualizes ball possession as color trails.
 
+Dependencies:
+https://github.com/Unity-Technologies/ml-agents/releases/tag/0.8.2
+https://github.com/Unity-Technologies/ml-agents/pull/1975
