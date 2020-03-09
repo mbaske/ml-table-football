@@ -3,20 +3,13 @@ using UnityEngine;
 
 namespace TableFootball
 {
-    // Match state text obs for self-play with ghost trainer,
-    // see https://github.com/Unity-Technologies/ml-agents/pull/1975
-    public static class GhostTrainerMatchState
-    {
-        public static string WIN = "win";
-        public static string LOSS = "loss";
-        public static string PLAY = "play";
-    }
-
     public class FootballAgent : Agent
     {
         public int ID { get; private set; }
         public AgentStats Stats { get; private set; }
         public int GameCount { get; private set; }
+        // NOTE: Change AgentParameters struct and agentParameters field
+        // from internal to protected in Agent class line 124ff.
         public float Progress => GetStepCount() / (float)agentParameters.maxStep;
 
         [SerializeField]
@@ -51,18 +44,10 @@ namespace TableFootball
         float maxSpinPenalty = 0.01f;
         bool useSpinPenalty;
 
-        [Space]
-        [Header("Optional for ghost trainer")]
-        [SerializeField]
-        FootballAgent opponentAgent;
-        string matchState;
-        bool useGhostTrainer;
-        
         public override void InitializeAgent()
         {
             ID = gameObject.GetInstanceID();
             Stats = new AgentStats(agentTeam.transform.name);
-            agentTeam.Initialize();
 
             ball.AutoKickEventHandler += OnAutoKick;
             ball.PlayerContactEventHandler += OnPlayerContact;
@@ -70,7 +55,6 @@ namespace TableFootball
 
             useShotReward = shotRewardMultiplier > 0;
             useSpinPenalty = maxSpinPenalty > 0;
-            useGhostTrainer = opponentAgent != null;
         }
 
         public override void AgentReset()
@@ -78,14 +62,17 @@ namespace TableFootball
             GameCount++;
             agentTeam.ReSet();
             Stats.Reset();
-            matchState = GhostTrainerMatchState.PLAY;
+            ball.ReSet();
         }
 
-        public override void AgentAction(float[] vectorAction, string textAction)
+        // N = 8
+        public override void AgentAction(float[] vectorAction)
         {
             agentTeam.StepUpdate(vectorAction);
         }
 
+        // N = 58 - 2D obs
+        // N = 60 - 3D obs
         public override void CollectObservations()
         {
             if (use2DBallObs)
@@ -119,12 +106,6 @@ namespace TableFootball
             }
 
             AddVectorObs(opponentTeam.GetNormalizedObs());
-
-            if (useGhostTrainer)
-            {
-                SetTextObs(opponentAgent.ID + "|" + matchState);
-                matchState = GhostTrainerMatchState.PLAY;
-            }
 
             if (useShotReward)
             {
@@ -180,7 +161,7 @@ namespace TableFootball
             bool hasScored = e.Object == opponentTeam.Goal;
             Stats.OnGoal(hasScored);
             AddReward(hasScored ? goalScoredReward : -goalConcededPenalty);
-            matchState = hasScored ? GhostTrainerMatchState.WIN : GhostTrainerMatchState.LOSS;
+
             if (hasScored)
             {
                 agentTeam.HighlightGoal();
